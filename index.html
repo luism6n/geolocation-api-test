@@ -8,22 +8,61 @@
 </head>
 
 <body>
-    <ol id="coordList">
+    <ol style="width: 100%" id="coordList">
 
     </ol>
 
     <script>
+        function dist(lat1, lon1, lat2, lon2) {  // generally used geo measurement function
+            var R = 6378.137; // Radius of earth in KM
+            var dLat = lat2 * Math.PI / 180 - lat1 * Math.PI / 180;
+            var dLon = lon2 * Math.PI / 180 - lon1 * Math.PI / 180;
+            var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            var d = R * c;
+            return d * 1000; // meters
+        }
+
         let id;
         let target;
         let options;
         let coordList = document.getElementById('coordList')
+        let origin = null
+        let lastDistance = null
 
         function success(pos) {
             const crd = pos.coords;
 
+            if (!origin) {
+                origin = crd
+            }
+
+            const distance = dist(origin.latitude, origin.longitude, crd.latitude, crd.longitude)
+            let diff = null;
+            if (lastDistance !== null) {
+                diff = lastDistance - distance
+            }
+
             let item = document.createElement('li')
-            item.innerText = `${crd.latitude} ${crd.longitude}`
+
+            formatter = Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 })
+
+            let diffText = null
+            if (diff) {
+                if (diff > 0) {
+                    diffText = ` (+${formatter.format(diff)})`
+                } else if (diff < 0) {
+                    diffText = ` (${formatter.format(diff)})`
+                }
+            }
+
+
+            item.innerText = `${formatter.format(distance)} m${diffText ?? ''}`
             coordList.appendChild(item)
+
+            lastDistance = distance
         }
 
         function error(err) {
